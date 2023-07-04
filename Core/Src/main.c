@@ -18,12 +18,16 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
 #include "rtc.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ssd1306.h"
+#include "ssd1306_fonts.h"
+#include "ssd1306_tests.h"
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,11 +50,11 @@ RTC_TimeTypeDef tempo;
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t segundos, minutos, horas;
-uint16_t dia_semana, dia, mes, ano;
-
-uint8_t luz_uv[24]={1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0};
-
+uint8_t segundos, minutos, horas, dia_semana, dia, mes, ano;
+uint8_t horario_uv[] = {8, 16};
+uint8_t estado_uv = 0;
+uint8_t horas_restantes, minutos_restantes, segundos_restantes;
+char text_buffer[50];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,12 +97,14 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_RTC_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+    ssd1306_Init();
     while (1) {
     /* USER CODE END WHILE */
 
@@ -110,15 +116,54 @@ int main(void)
         dia = data.Date;
         mes = data.Month;
         ano = data.Year;
-
         segundos = tempo.Seconds;
         minutos = tempo.Minutes;
         horas = tempo.Hours;
 
-        HAL_GPIO_WritePin(rele1_GPIO_Port, rele1_Pin, luz_uv[horas]);
-        HAL_GPIO_WritePin(rele2_GPIO_Port, rele2_Pin, (horas%2));
-        HAL_GPIO_WritePin(rele3_GPIO_Port, rele3_Pin, (minutos%2));
-        HAL_GPIO_WritePin(rele4_GPIO_Port, rele4_Pin, (segundos/30));
+        if (horario_uv[0] <= horas && horas < horario_uv[1]) {
+            estado_uv = 1;
+        } else {
+            estado_uv = 0;
+        }
+
+        uint8_t i = horas;
+        horas_restantes = 0;
+        while (i != horario_uv[estado_uv]) {
+            i++;
+            horas_restantes++;
+            if (i >= 24) {
+                i = 0;
+            }
+        }
+        horas_restantes--;
+        minutos_restantes = 59 - minutos;
+        segundos_restantes = 60 - segundos;
+        if (segundos_restantes == 60) {
+            segundos_restantes = 0;
+            minutos_restantes++;
+        }
+        if (minutos_restantes == 60) {
+            minutos_restantes = 0;
+            horas_restantes++;
+        }
+
+        ssd1306_Fill(Black);
+        ssd1306_DrawRectangle(0, 0, 127, 15, White);
+        ssd1306_DrawRectangle(0, 16, 127, 63, White);
+        ssd1306_SetCursor(13, 3);
+        sprintf(text_buffer, "Hora: %02d:%02d:%02d", horas, minutos, segundos);
+        ssd1306_WriteString(text_buffer, Font_7x10, White);
+        if (!estado_uv) {
+            ssd1306_SetCursor(12, 19);
+            ssd1306_WriteString(" Liga em: ", Font_11x18, White);
+        } else {
+            ssd1306_SetCursor(6, 19);
+            ssd1306_WriteString("Desliga em:", Font_11x18, White);
+        }
+        ssd1306_SetCursor(12, 43);
+        sprintf(text_buffer, " %02d:%02d:%02d ", horas_restantes, minutos_restantes, segundos_restantes);
+        ssd1306_WriteString(text_buffer, Font_11x18, White);
+        ssd1306_UpdateScreen();
     }
   /* USER CODE END 3 */
 }
@@ -136,12 +181,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -153,7 +199,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV16;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 

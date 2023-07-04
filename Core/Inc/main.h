@@ -57,14 +57,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define rele4_Pin GPIO_PIN_6
-#define rele4_GPIO_Port GPIOB
-#define rele3_Pin GPIO_PIN_7
-#define rele3_GPIO_Port GPIOB
-#define rele2_Pin GPIO_PIN_8
-#define rele2_GPIO_Port GPIOB
-#define rele1_Pin GPIO_PIN_9
-#define rele1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
