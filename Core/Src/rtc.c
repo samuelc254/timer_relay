@@ -21,7 +21,7 @@
 #include "rtc.h"
 
 /* USER CODE BEGIN 0 */
-#define CONFIGURAR_RTC 0
+#define CONFIGURAR_RTC 1
 /* USER CODE END 0 */
 
 RTC_HandleTypeDef hrtc;
@@ -32,10 +32,8 @@ void MX_RTC_Init(void) {
 #if CONFIGURAR_RTC == 1
     /* USER CODE END RTC_Init 0 */
 
-    ///*
     RTC_TimeTypeDef sTime = {0};
     RTC_DateTypeDef DateToUpdate = {0};
-    //*/
 
     /* USER CODE BEGIN RTC_Init 1 */
 #endif
@@ -51,27 +49,26 @@ void MX_RTC_Init(void) {
     }
 
     /* USER CODE BEGIN Check_RTC_BKUP */
-#if CONFIGURAR_RTC == 1
+#if CONFIGURAR_RTC == 0
     /* USER CODE END Check_RTC_BKUP */
 
-    /** Initialize RTC and set the Time and Date */
-
-    sTime.Hours = 0x16;
-    sTime.Minutes = 0x8;
-    sTime.Seconds = 0x40;
+    /** Initialize RTC and set the Time and Date
+     */
+    sTime.Hours = 0x17;
+    sTime.Minutes = 0x20;
+    sTime.Seconds = 0x0;
 
     if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) {
         Error_Handler();
     }
     DateToUpdate.WeekDay = RTC_WEEKDAY_TUESDAY;
     DateToUpdate.Month = RTC_MONTH_JULY;
-    DateToUpdate.Date = 0x5;
+    DateToUpdate.Date = 0x12;
     DateToUpdate.Year = 0x23;
 
     if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BCD) != HAL_OK) {
         Error_Handler();
     }
-
     /* USER CODE BEGIN RTC_Init 2 */
 #endif
     /* USER CODE END RTC_Init 2 */

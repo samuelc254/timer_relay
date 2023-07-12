@@ -121,10 +121,12 @@ int main(void) {
             } else if (horas < horario_uv[i + 1]) {
                 estado_uv++;
                 break;
+            } else if (i == (sizeof(horario_uv) - 2)) {
+                estado_uv = 0;
             }
         }
-        HAL_GPIO_WritePin(rele1_GPIO_Port, rele1_Pin, (estado_uv % 2));
-        HAL_GPIO_WritePin(rele2_GPIO_Port, rele2_Pin, (estado_uv % 2));
+        HAL_GPIO_WritePin(rele1_GPIO_Port, rele1_Pin, !(estado_uv % 2));
+        HAL_GPIO_WritePin(rele2_GPIO_Port, rele2_Pin, !(estado_uv % 2));
 
         uint8_t i = horas;
         horas_restantes = 0;
@@ -235,7 +237,7 @@ void Error_Handler(void) {
  * @param  line: assert_param error line source number
  * @retval None
  */
-void assert_failed(uint8_t* file, uint32_t line) {
+void assert_failed(uint8_t *file, uint32_t line) {
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line number,
        ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
